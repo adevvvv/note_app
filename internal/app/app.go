@@ -20,7 +20,7 @@ func (a *App) Initialize() {
 		Host:     "postgres",
 		Port:     5432,
 		User:     "postgres",
-		Password: "1234",
+		Password: "password",
 	}
 
 	_, err := dbConfig.Connect()
