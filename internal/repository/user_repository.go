@@ -9,6 +9,7 @@ import (
 // UserRepository интерфейс для работы с пользователями
 type UserRepository interface {
 	CreateUser(user *models.User) error
+	GetUserByUsername(username string) (*models.User, error)
 }
 
 // UserRepositoryImpl реализация интерфейса UserRepository
@@ -28,4 +29,14 @@ func (ur *UserRepositoryImpl) CreateUser(user *models.User) error {
 		return fmt.Errorf("ошибка при создании пользователя: %v", err)
 	}
 	return nil
+}
+
+// GetUserByUsername возвращает пользователя по его имени пользователя
+func (ur *UserRepositoryImpl) GetUserByUsername(username string) (*models.User, error) {
+	var user models.User
+	err := ur.db.QueryRow("SELECT id, username, password FROM users WHERE username = $1", username).Scan(&user.ID, &user.Username, &user.Password)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при вводе пользователя по имени пользователя: %v", err)
+	}
+	return &user, nil
 }

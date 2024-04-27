@@ -1,4 +1,4 @@
-package config
+package configs
 
 import (
 	"database/sql"
@@ -7,10 +7,15 @@ import (
 )
 
 type DBConfig struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+}
+type Configuration struct {
+	Port      string   `yaml:"port"`
+	JWTSecret string   `yaml:"jwtSecret"`
+	DB        DBConfig `yaml:"db"`
 }
 
 func (c *DBConfig) Connect() (*sql.DB, error) {
@@ -25,3 +30,5 @@ func (c *DBConfig) Connect() (*sql.DB, error) {
 	}
 	return db, nil
 }
+
+var Config Configuration
