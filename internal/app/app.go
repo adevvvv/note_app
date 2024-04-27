@@ -5,6 +5,9 @@ import (
 	"log"
 	"net/http"
 	"note_app/internal/config"
+	"note_app/internal/handlers"
+	"note_app/internal/repository"
+	"note_app/internal/services"
 )
 
 type App struct {
@@ -23,10 +26,17 @@ func (a *App) Initialize() {
 		Password: "password",
 	}
 
-	_, err := dbConfig.Connect()
+	db, err := dbConfig.Connect()
 	if err != nil {
 		log.Fatal("Ошибка подключения к базе данных:", err)
 	}
+
+	userRepository := repository.NewUserRepository(db)
+	userService := services.NewUserService(userRepository)
+
+	a.Router = mux.NewRouter()
+
+	a.Router.HandleFunc("/signup", handlers.SignupHandler(userService)).Methods("POST")
 }
 
 func (a *App) Run(addr string) error {
