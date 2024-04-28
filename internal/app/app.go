@@ -47,7 +47,7 @@ func (a *App) Initialize() error {
 	return nil
 }
 
-// initHandlers инициализирует обработчики запросов и добавляет их к маршрутизатору.
+// Добавьте инициализацию нового обработчика в метод initHandlers
 func (a *App) initHandlers(userService *services.UserService, noteService *services.NoteService) {
 	signUpHandler := handlers.NewSignupHandler(userService)
 	loginHandler := handlers.NewLoginHandler(userService, config.Config.JWTSecret)
@@ -55,11 +55,17 @@ func (a *App) initHandlers(userService *services.UserService, noteService *servi
 	editNoteHandler := handlers.EditNote(*noteService, userService, config.Config.JWTSecret)
 	deleteNoteHandler := handlers.DeleteNote(*noteService, config.Config.JWTSecret)
 
+	// Инициализация нового обработчика для получения заметок
+	getNotesHandler := handlers.GetNotesHandler(*noteService, *userService, config.Config.JWTSecret)
+
 	a.Router.POST("/signup", signUpHandler.SignUp)
 	a.Router.POST("/login", loginHandler.Login)
 	a.Router.POST("/note", noteHandler.AddNote)
 	a.Router.PUT("/note/:id", editNoteHandler)
 	a.Router.DELETE("/note/:id", deleteNoteHandler)
+
+	// Добавление маршрута для получения заметок
+	a.Router.GET("/notes", getNotesHandler)
 }
 
 // Run запускает сервер на указанном адресе.

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"net/http"
@@ -226,5 +227,142 @@ func DeleteNote(ns services.NoteService, jwtKey string) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "Заметка успешно удалена"})
+	}
+}
+func GetNotesHandler(ns services.NoteService, us services.UserService, jwtKey string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Извлечение токена из куки запроса
+		tokenString, err := c.Cookie("token")
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Не авторизован"})
+			return
+		}
+
+		// Проверка и расшифровка токена
+		token, err := jwt.ParseWithClaims(tokenString, &models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(jwtKey), nil
+		})
+		if err != nil || !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Не авторизован"})
+			return
+		}
+
+		claims, ok := token.Claims.(*models.Claims)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Не авторизован"})
+			return
+		}
+		currentUserID := claims.UserID
+
+		// Извлечение параметров фильтрации из URL-запроса
+		startDateStr := c.Query("start_date")
+		endDateStr := c.Query("end_date")
+		username := c.Query("username")
+		dateStr := c.Query("date")
+
+		fmt.Println("Start Date:", startDateStr)
+		fmt.Println("End Date:", endDateStr)
+		fmt.Println("Username:", username)
+		fmt.Println("Date:", dateStr)
+
+		// Преобразование параметров фильтрации
+		var startDate, endDate, date time.Time
+		if startDateStr != "" {
+			startDate, err = time.Parse("2006-01-02", startDateStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат даты начала. Используйте 'ГГГГ-ММ-ДД'"})
+				return
+			}
+		}
+		if endDateStr != "" {
+			endDate, err = time.Parse("2006-01-02", endDateStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат даты окончания. Используйте 'ГГГГ-ММ-ДД'"})
+				return
+			}
+		}
+		if dateStr != "" {
+			date, err = time.Parse("2006-01-02", dateStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат даты. Используйте 'ГГГГ-ММ-ДД'"})
+				return
+			}
+		}
+
+		// Получение идентификатора пользователя по его имени, если указан параметр username
+		var filterUserID int
+		if username != "" {
+			user, err := us.GetUserByUsername(username)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Пользователь не найден"})
+				return
+			}
+			filterUserID = user.ID
+		}
+
+		// Извлечение параметров страницы из URL-запроса
+		page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+		if err != nil || page <= 0 {
+			page = 1
+		}
+		limit, err := strconv.Atoi(c.DefaultQuery("limit", "10"))
+		if err != nil || limit <= 0 {
+			limit = 10
+		}
+
+		offset := (page - 1) * limit
+
+		fmt.Println("Offset:", offset)
+		fmt.Println("Limit:", limit)
+
+		// Фильтрация заметок по дате создания, пользователю и дню
+		var notes []models.Note
+		var errorGetNotes error
+		switch {
+		case !startDate.IsZero() && !endDate.IsZero() && username != "":
+			notes, errorGetNotes = ns.GetNotesByUserIDAndDateRange(context.Background(), filterUserID, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"), offset, limit)
+		case !startDate.IsZero() && !endDate.IsZero():
+			notes, errorGetNotes = ns.GetNotesByDateRange(context.Background(), startDate.Format("2006-01-02"), endDate.Format("2006-01-02"), offset, limit)
+		case !date.IsZero() && username != "":
+			notes, errorGetNotes = ns.GetNotesByUserIDAndDay(context.Background(), filterUserID, date.Format("2006-01-02"), offset, limit)
+		case !date.IsZero():
+			notes, errorGetNotes = ns.GetNotesByDay(context.Background(), date.Format("2006-01-02"), offset, limit)
+		case username != "":
+			notes, errorGetNotes = ns.GetNotesByUserID(context.Background(), filterUserID, offset, limit)
+		default:
+			notes, errorGetNotes = ns.GetNotes(context.Background(), offset, limit)
+		}
+
+		if errorGetNotes != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении заметок"})
+			return
+		}
+
+		fmt.Println("Number of Notes:", len(notes))
+
+		// Создание списка для ответа
+		response := make([]gin.H, 0, len(notes))
+		for _, note := range notes {
+			author, err := us.GetUserByID(note.UserID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении информации об авторе заметки"})
+				return
+			}
+
+			noteData := gin.H{
+				"title":  note.Title,
+				"text":   note.Text,
+				"author": author.Username,
+			}
+
+			// Добавление признака belongsToCurrentUser только если он равен true
+			if note.UserID == currentUserID {
+				noteData["belongsToCurrentUser"] = true
+			}
+
+			response = append(response, noteData)
+		}
+
+		c.JSON(http.StatusOK, response)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"note_app/internal/models"
+	"note_app/pkg/utils"
 )
 
 // NoteRepository интерфейс для работы с заметками в базе данных.
@@ -14,6 +15,13 @@ type NoteRepository interface {
 	GetNoteByID(ctx context.Context, noteID int) (*models.Note, error)
 	UpdateNote(ctx context.Context, noteID int, note *models.Note) error
 	DeleteNote(ctx context.Context, noteID int) error
+	GetNotesByUserID(ctx context.Context, userID, offset, limit int) ([]models.Note, error)
+	GetNotesByDateRange(ctx context.Context, startDate, endDate string, offset, limit int) ([]models.Note, error)
+	GetNotesByDay(ctx context.Context, day string, offset, limit int) ([]models.Note, error)
+	GetNotes(ctx context.Context, offset, limit int) ([]models.Note, error)
+	GetNotesByUserIDAndDateRange(ctx context.Context, userID int, startDate, endDate string, offset, limit int) ([]models.Note, error)
+	GetNotesByUserIDAndDate(ctx context.Context, userID int, date string, offset, limit int) ([]models.Note, error)
+	GetNotesByUserIDAndDay(ctx context.Context, userID int, day string, offset, limit int) ([]models.Note, error)
 }
 
 // noteRepository реализация интерфейса NoteRepository.
@@ -49,9 +57,9 @@ func (nr *noteRepository) AddNote(ctx context.Context, note *models.Note) (int, 
 func (nr *noteRepository) GetNoteByID(ctx context.Context, noteID int) (*models.Note, error) {
 	var note models.Note
 	query := `
-        SELECT id, user_id, title, text, created_at 
-        FROM notes 
-        WHERE id = $1
+		SELECT id, user_id, title, text, created_at 
+		FROM notes 
+		WHERE id = $1
 	`
 	err := nr.db.QueryRowContext(ctx, query, noteID).
 		Scan(&note.ID, &note.UserID, &note.Title, &note.Text, &note.CreatedAt)
@@ -71,7 +79,7 @@ func (nr *noteRepository) UpdateNote(ctx context.Context, noteID int, note *mode
         UPDATE notes 
         SET title = $1, text = $2 
         WHERE id = $3
-`
+    `
 	result, err := nr.db.ExecContext(ctx, query, note.Title, note.Text, noteID)
 	if err != nil {
 		log.Printf("Ошибка при обновлении заметки: %v", err)
@@ -100,4 +108,94 @@ func (nr *noteRepository) DeleteNote(ctx context.Context, noteID int) error {
 	}
 
 	return nil
+}
+
+// GetNotesByUserID возвращает заметки пользователя из базы данных.
+func (nr *noteRepository) GetNotesByUserID(ctx context.Context, userID, offset, limit int) ([]models.Note, error) {
+	query := `
+		SELECT notes.id, notes.user_id, notes.title, notes.text, notes.created_at, users.username 
+		FROM notes 
+		INNER JOIN users ON notes.user_id = users.id 
+		WHERE notes.user_id = $1 
+		ORDER BY notes.created_at DESC 
+		LIMIT $2 OFFSET $3
+	`
+	return utils.GetNotes(ctx, nr.db, query, userID, limit, offset)
+}
+
+// GetNotesByDateRange возвращает заметки за определенный период времени из базы данных.
+func (nr *noteRepository) GetNotesByDateRange(ctx context.Context, startDate, endDate string, offset, limit int) ([]models.Note, error) {
+	query := `
+		SELECT notes.id, notes.user_id, notes.title, notes.text, notes.created_at, users.username 
+		FROM notes 
+		INNER JOIN users ON notes.user_id = users.id 
+		WHERE notes.created_at >= $1 AND notes.created_at <= $2 
+		ORDER BY notes.created_at DESC 
+		LIMIT $3 OFFSET $4
+	`
+	return utils.GetNotes(ctx, nr.db, query, startDate, endDate, limit, offset)
+}
+
+// GetNotesByDay возвращает заметки за определенный день из базы данных.
+func (nr *noteRepository) GetNotesByDay(ctx context.Context, day string, offset, limit int) ([]models.Note, error) {
+	query := `
+		SELECT notes.id, notes.user_id, notes.title, notes.text, notes.created_at, users.username 
+		FROM notes 
+		INNER JOIN users ON notes.user_id = users.id 
+		WHERE DATE(notes.created_at) = $1 
+		ORDER BY notes.created_at DESC 
+		LIMIT $2 OFFSET $3
+	`
+	return utils.GetNotes(ctx, nr.db, query, day, limit, offset)
+}
+
+// GetNotes возвращает все заметки из базы данных.
+func (nr *noteRepository) GetNotes(ctx context.Context, offset, limit int) ([]models.Note, error) {
+	query := `
+		SELECT notes.id, notes.user_id, notes.title, notes.text, notes.created_at, users.username 
+		FROM notes 
+		INNER JOIN users ON notes.user_id = users.id 
+		ORDER BY notes.created_at DESC 
+		LIMIT $1 OFFSET $2
+	`
+	return utils.GetNotes(ctx, nr.db, query, limit, offset)
+}
+
+// GetNotesByUserIDAndDateRange возвращает заметки пользователя в определенном диапазоне дат.
+func (nr *noteRepository) GetNotesByUserIDAndDateRange(ctx context.Context, userID int, startDate, endDate string, offset, limit int) ([]models.Note, error) {
+	query := `
+        SELECT notes.id, notes.user_id, notes.title, notes.text, notes.created_at, users.username 
+        FROM notes 
+        INNER JOIN users ON notes.user_id = users.id 
+        WHERE notes.user_id = $1 AND notes.created_at >= $2 AND notes.created_at <= $3
+        ORDER BY notes.created_at DESC 
+        LIMIT $4 OFFSET $5
+    `
+	return utils.GetNotes(ctx, nr.db, query, userID, startDate, endDate, limit, offset)
+}
+
+// GetNotesByUserIDAndDate возвращает заметки пользователя за определенную дату.
+func (nr *noteRepository) GetNotesByUserIDAndDate(ctx context.Context, userID int, date string, offset, limit int) ([]models.Note, error) {
+	query := `
+        SELECT notes.id, notes.user_id, notes.title, notes.text, notes.created_at, users.username 
+        FROM notes 
+        INNER JOIN users ON notes.user_id = users.id 
+        WHERE notes.user_id = $1 AND DATE(notes.created_at) = $2
+        ORDER BY notes.created_at DESC 
+        LIMIT $3 OFFSET $4
+    `
+	return utils.GetNotes(ctx, nr.db, query, userID, date, limit, offset)
+}
+
+// GetNotesByUserIDAndDay возвращает заметки, созданные указанным пользователем за указанный день
+func (nr *noteRepository) GetNotesByUserIDAndDay(ctx context.Context, userID int, day string, offset, limit int) ([]models.Note, error) {
+	query := `
+		SELECT notes.id, notes.user_id, notes.title, notes.text, notes.created_at, users.username 
+		FROM notes 
+		INNER JOIN users ON notes.user_id = users.id 
+		WHERE notes.user_id = $1 AND DATE(notes.created_at) = $2 
+		ORDER BY notes.created_at DESC 
+		LIMIT $3 OFFSET $4
+	`
+	return utils.GetNotes(ctx, nr.db, query, userID, day, limit, offset)
 }
