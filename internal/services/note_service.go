@@ -9,6 +9,8 @@ import (
 // NoteService предоставляет методы для работы с заметками.
 type NoteService interface {
 	AddNote(ctx context.Context, note *models.Note) (int, error)
+	GetNoteByID(ctx context.Context, noteID int) (*models.Note, error)
+	UpdateNote(ctx context.Context, noteID int, note *models.Note) error
 }
 
 // noteService реализация интерфейса NoteService.
@@ -24,4 +26,14 @@ func NewNoteService(repo repository.NoteRepository) NoteService {
 // AddNote добавляет новую заметку.
 func (ns *noteService) AddNote(ctx context.Context, note *models.Note) (int, error) {
 	return ns.repo.AddNote(ctx, note)
+}
+
+// GetNoteByID возвращает заметку по её ID.
+func (ns *noteService) GetNoteByID(ctx context.Context, noteID int) (*models.Note, error) {
+	return ns.repo.GetNoteByID(ctx, noteID)
+}
+
+// UpdateNote обновляет заметку.
+func (ns *noteService) UpdateNote(ctx context.Context, noteID int, note *models.Note) error {
+	return ns.repo.UpdateNote(ctx, noteID, note)
 }

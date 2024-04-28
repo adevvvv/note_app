@@ -51,10 +51,12 @@ func (a *App) initHandlers(userService *services.UserService, noteService *servi
 	signUpHandler := handlers.NewSignupHandler(userService)
 	loginHandler := handlers.NewLoginHandler(userService, config.Config.JWTSecret)
 	noteHandler := handlers.NewNoteHandler(*noteService, userService, config.Config.JWTSecret)
+	editNoteHandler := handlers.EditNote(*noteService, userService, config.Config.JWTSecret)
 
 	a.Router.POST("/signup", signUpHandler.SignUp)
 	a.Router.POST("/login", loginHandler.Login)
 	a.Router.POST("/note", noteHandler.AddNote)
+	a.Router.PUT("/note/:id", editNoteHandler)
 }
 
 // Run запускает сервер на указанном адресе.
