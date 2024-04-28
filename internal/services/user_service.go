@@ -5,6 +5,7 @@ import "note_app/internal/models"
 // UserRepository интерфейс для работы с пользователями
 type UserRepository interface {
 	CreateUser(user *models.User) error
+	GetUserByID(userID int) (*models.User, error)
 	GetUserByUsername(username string) (*models.User, error)
 }
 
@@ -26,4 +27,9 @@ func (us *UserService) CreateUser(user *models.User) error {
 // GetUserByUsername возвращает пользователя по его имени пользователя
 func (us *UserService) GetUserByUsername(username string) (*models.User, error) {
 	return us.userRepository.GetUserByUsername(username)
+}
+
+// GetUserByID возвращает пользователя по его ID
+func (us *UserService) GetUserByID(userID int) (*models.User, error) {
+	return us.userRepository.GetUserByID(userID)
 }

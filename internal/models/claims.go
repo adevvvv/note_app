@@ -1,10 +1,11 @@
 package models
 
 import (
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt"
 )
 
+// Claims представляет пользовательские утверждения JWT.
 type Claims struct {
-	UserID int64 `json:"user_id"`
-	jwt.Claims
+	UserID int `json:"user_id"`
+	jwt.StandardClaims
 }

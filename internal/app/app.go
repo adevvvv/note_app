@@ -1,64 +1,80 @@
 package app
 
 import (
+	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
 	"log"
-	"net/http"
-	"note_app/internal/configs"
+	"note_app/internal/config"
 	"note_app/internal/handlers"
 	"note_app/internal/repository"
 	"note_app/internal/services"
 	"os"
 )
 
-type App struct{}
+// App представляет собой приложение, которое содержит маршрутизатор Gin.
+type App struct {
+	Router *gin.Engine
+}
 
+// NewApp создает новый экземпляр приложения.
 func NewApp() *App {
 	return &App{}
 }
 
+// Initialize инициализирует приложение, подготавливает маршрутизатор и подключается к базе данных.
 func (a *App) Initialize() {
 	err := initConfig()
 	if err != nil {
 		log.Fatal("Ошибка чтения файла конфигурации:", err)
 	}
 
-	dbConfig := configs.DBConfig{
-		Host:     configs.Config.DB.Host,
-		Port:     configs.Config.DB.Port,
-		User:     configs.Config.DB.User,
-		Password: configs.Config.DB.Password,
-	}
-
-	db, err := dbConfig.Connect()
+	db, err := config.Config.DB.Connect()
 	if err != nil {
 		log.Fatal("Ошибка подключения к базе данных:", err)
 	}
 
-	userRepository := repository.NewUserRepository(db)
-	userService := services.NewUserService(userRepository)
+	userService := services.NewUserService(repository.NewUserRepository(db))
+	noteService := services.NewNoteService(repository.NewNoteRepository(db))
 
-	http.HandleFunc("/signup", handlers.SignupHandler(userService))
-	http.HandleFunc("/login", handlers.LoginHandler(userService, configs.Config.JWTSecret))
+	// Инициализируем маршрутизатор Gin
+	a.Router = gin.Default()
 
+	// Переключаемся в режим выпуска в производственной среде
+	gin.SetMode(gin.ReleaseMode)
+
+	// Используем обработчики Gin
+	a.initHandlers(userService, &noteService)
 }
 
+// initHandlers инициализирует обработчики запросов и добавляет их к маршрутизатору.
+func (a *App) initHandlers(userService *services.UserService, noteService *services.NoteService) {
+	signUpHandler := handlers.NewSignupHandler(userService)
+	loginHandler := handlers.NewLoginHandler(userService, config.Config.JWTSecret)
+	noteHandler := handlers.NewNoteHandler(*noteService, userService, config.Config.JWTSecret)
+
+	a.Router.POST("/signup", signUpHandler.SignUp)
+	a.Router.POST("/login", loginHandler.Login)
+	a.Router.POST("/note", noteHandler.AddNote)
+}
+
+// Run запускает сервер на указанном адресе.
 func (a *App) Run(addr string) error {
-	return http.ListenAndServe(addr, nil)
+	return a.Router.Run(addr)
 }
 
+// initConfig инициализирует конфигурацию приложения из файла YAML.
 func initConfig() error {
-	data, err := os.ReadFile("internal/configs/config.yaml")
+	data, err := os.ReadFile("configs/config.yaml")
 	if err != nil {
 		return err
 	}
 
-	var conf configs.Configuration
+	var conf config.Configuration
 	err = yaml.Unmarshal(data, &conf)
 	if err != nil {
 		return err
 	}
 
-	configs.Config = conf
+	config.Config = conf
 	return nil
 }
