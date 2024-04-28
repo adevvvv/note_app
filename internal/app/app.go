@@ -2,6 +2,9 @@ package app
 
 import (
 	"github.com/gin-gonic/gin"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	_ "github.com/swaggo/http-swagger"
 	"gopkg.in/yaml.v3"
 	"note_app/internal/config"
 	"note_app/internal/handlers"
@@ -44,28 +47,34 @@ func (a *App) Initialize() error {
 	// Используем обработчики Gin
 	a.initHandlers(userService, &noteService)
 
+	// Инициализируем Swagger
+	a.initSwagger()
+
 	return nil
+}
+
+// initSwagger инициализирует Swagger.
+func (a *App) initSwagger() {
+	// Подключаем Swagger UI
+	a.Router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 }
 
 // Добавьте инициализацию нового обработчика в метод initHandlers
 func (a *App) initHandlers(userService *services.UserService, noteService *services.NoteService) {
-	signUpHandler := handlers.NewSignupHandler(userService)
-	loginHandler := handlers.NewLoginHandler(userService, config.Config.JWTSecret)
-	noteHandler := handlers.NewNoteHandler(*noteService, userService, config.Config.JWTSecret)
-	editNoteHandler := handlers.EditNote(*noteService, userService, config.Config.JWTSecret)
-	deleteNoteHandler := handlers.DeleteNote(*noteService, config.Config.JWTSecret)
-
-	// Инициализация нового обработчика для получения заметок
+	signUpHandler := handlers.NewSignupHandler(userService).SignUp
+	signInHandler := handlers.NewSignInHandler(userService, config.Config.JWTSecret).SignIn
+	noteHandler := handlers.NewNoteHandler(*noteService, userService, config.Config.JWTSecret).AddNote
+	editNoteHandler := handlers.EditNoteHandler(*noteService, userService, config.Config.JWTSecret)
+	deleteNoteHandler := handlers.DeleteNoteHandler(*noteService, config.Config.JWTSecret)
 	getNotesHandler := handlers.GetNotesHandler(*noteService, *userService, config.Config.JWTSecret)
 
-	a.Router.POST("/signup", signUpHandler.SignUp)
-	a.Router.POST("/login", loginHandler.Login)
-	a.Router.POST("/note", noteHandler.AddNote)
+	a.Router.POST("/signup", signUpHandler)
+	a.Router.POST("/signin", signInHandler)
+	a.Router.POST("/note", noteHandler)
 	a.Router.PUT("/note/:id", editNoteHandler)
 	a.Router.DELETE("/note/:id", deleteNoteHandler)
-
-	// Добавление маршрута для получения заметок
 	a.Router.GET("/notes", getNotesHandler)
+
 }
 
 // Run запускает сервер на указанном адресе.

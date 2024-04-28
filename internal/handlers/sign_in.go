@@ -15,16 +15,15 @@ type LoginHandler struct {
 	JWTKey      []byte
 }
 
-// NewLoginHandler создает новый экземпляр LoginHandler для обработки запросов на аутентификацию.
-func NewLoginHandler(userService *services.UserService, jwtKey string) *LoginHandler {
+// NewSignInHandler создает новый экземпляр LoginHandler для обработки запросов на аутентификацию.
+func NewSignInHandler(userService *services.UserService, jwtKey string) *LoginHandler {
 	return &LoginHandler{
 		UserService: userService,
 		JWTKey:      []byte(jwtKey),
 	}
 }
 
-// Login обрабатывает запрос на аутентификацию пользователя.
-func (loginHandler *LoginHandler) Login(c *gin.Context) {
+func (loginHandler *LoginHandler) SignIn(c *gin.Context) {
 	var user models.User
 	if err := c.BindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверное тело запроса"})

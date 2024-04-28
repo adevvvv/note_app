@@ -19,7 +19,6 @@ func NewSignupHandler(userService *services.UserService) *UserHandler {
 	return &UserHandler{UserService: userService}
 }
 
-// SignUp обрабатывает запрос на регистрацию пользователя.
 func (userHandler *UserHandler) SignUp(c *gin.Context) {
 	var user models.User
 	if err := c.BindJSON(&user); err != nil {

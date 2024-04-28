@@ -87,8 +87,8 @@ func (noteHandler *NoteHandler) AddNote(c *gin.Context) {
 	c.JSON(http.StatusOK, note)
 }
 
-// EditNote обрабатывает запрос на редактирование существующей заметки.
-func EditNote(ns services.NoteService, us *services.UserService, jwtKey string) gin.HandlerFunc {
+// EditNoteHandler обрабатывает запрос на редактирование заметки.
+func EditNoteHandler(ns services.NoteService, us *services.UserService, jwtKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Извлечение токена из куки запроса
 		tokenString, err := c.Cookie("token")
@@ -173,8 +173,8 @@ func EditNote(ns services.NoteService, us *services.UserService, jwtKey string) 
 	}
 }
 
-// DeleteNote обрабатывает запрос на удаление заметки.
-func DeleteNote(ns services.NoteService, jwtKey string) gin.HandlerFunc {
+// DeleteNoteHandler обрабатывает запрос на удаление заметки.
+func DeleteNoteHandler(ns services.NoteService, jwtKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Извлечение токена из куки запроса
 		tokenString, err := c.Cookie("token")
@@ -229,6 +229,8 @@ func DeleteNote(ns services.NoteService, jwtKey string) gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"message": "Заметка успешно удалена"})
 	}
 }
+
+// GetNotesHandler обрабатывает запрос на получение заметок с возможностью фильтрации.
 func GetNotesHandler(ns services.NoteService, us services.UserService, jwtKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Извлечение токена из куки запроса
