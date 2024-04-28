@@ -51,3 +51,11 @@ func ValidateUser(user *models.User) *HTTPError {
 
 	return nil
 }
+
+// CheckNoteLength проверяет длину заголовка и текста заметки.
+func CheckNoteLength(title, text string) bool {
+	const maxTitleLength = 100
+	const maxTextLength = 2000
+
+	return len(title) <= maxTitleLength && len(text) <= maxTextLength
+}
