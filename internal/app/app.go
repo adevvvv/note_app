@@ -3,7 +3,6 @@ package app
 import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
-	"log"
 	"note_app/internal/config"
 	"note_app/internal/handlers"
 	"note_app/internal/repository"
@@ -22,15 +21,15 @@ func NewApp() *App {
 }
 
 // Initialize инициализирует приложение, подготавливает маршрутизатор и подключается к базе данных.
-func (a *App) Initialize() {
+func (a *App) Initialize() error {
 	err := initConfig()
 	if err != nil {
-		log.Fatal("Ошибка чтения файла конфигурации:", err)
+		return err
 	}
 
 	db, err := config.Config.DB.Connect()
 	if err != nil {
-		log.Fatal("Ошибка подключения к базе данных:", err)
+		return err
 	}
 
 	userService := services.NewUserService(repository.NewUserRepository(db))
@@ -44,6 +43,8 @@ func (a *App) Initialize() {
 
 	// Используем обработчики Gin
 	a.initHandlers(userService, &noteService)
+
+	return nil
 }
 
 // initHandlers инициализирует обработчики запросов и добавляет их к маршрутизатору.
@@ -52,11 +53,13 @@ func (a *App) initHandlers(userService *services.UserService, noteService *servi
 	loginHandler := handlers.NewLoginHandler(userService, config.Config.JWTSecret)
 	noteHandler := handlers.NewNoteHandler(*noteService, userService, config.Config.JWTSecret)
 	editNoteHandler := handlers.EditNote(*noteService, userService, config.Config.JWTSecret)
+	deleteNoteHandler := handlers.DeleteNote(*noteService, config.Config.JWTSecret)
 
 	a.Router.POST("/signup", signUpHandler.SignUp)
 	a.Router.POST("/login", loginHandler.Login)
 	a.Router.POST("/note", noteHandler.AddNote)
 	a.Router.PUT("/note/:id", editNoteHandler)
+	a.Router.DELETE("/note/:id", deleteNoteHandler)
 }
 
 // Run запускает сервер на указанном адресе.

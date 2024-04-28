@@ -171,3 +171,60 @@ func EditNote(ns services.NoteService, us *services.UserService, jwtKey string) 
 		c.JSON(http.StatusOK, updatedNote)
 	}
 }
+
+// DeleteNote обрабатывает запрос на удаление заметки.
+func DeleteNote(ns services.NoteService, jwtKey string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Извлечение токена из куки запроса
+		tokenString, err := c.Cookie("token")
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Не авторизован"})
+			return
+		}
+
+		// Проверка токена
+		token, err := jwt.ParseWithClaims(tokenString, &models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(jwtKey), nil
+		})
+		if err != nil || !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Не авторизован"})
+			return
+		}
+
+		claims, ok := token.Claims.(*models.Claims)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Не авторизован"})
+			return
+		}
+		userID := claims.UserID
+
+		// Получение идентификатора заметки из параметров URL
+		noteIDStr := c.Param("id")
+		noteID, err := strconv.Atoi(noteIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный идентификатор заметки"})
+			return
+		}
+
+		// Получение заметки по идентификатору
+		note, err := ns.GetNoteByID(context.Background(), noteID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Заметка не найдена"})
+			return
+		}
+
+		// Проверка, является ли пользователь владельцем заметки
+		if userID != note.UserID {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Несанкционированное удаление этой заметки"})
+			return
+		}
+
+		// Удаление заметки
+		if err := ns.DeleteNote(context.Background(), noteID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при удалении заметки"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Заметка успешно удалена"})
+	}
+}

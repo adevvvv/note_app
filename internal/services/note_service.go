@@ -11,6 +11,7 @@ type NoteService interface {
 	AddNote(ctx context.Context, note *models.Note) (int, error)
 	GetNoteByID(ctx context.Context, noteID int) (*models.Note, error)
 	UpdateNote(ctx context.Context, noteID int, note *models.Note) error
+	DeleteNote(ctx context.Context, noteID int) error
 }
 
 // noteService реализация интерфейса NoteService.
@@ -36,4 +37,9 @@ func (ns *noteService) GetNoteByID(ctx context.Context, noteID int) (*models.Not
 // UpdateNote обновляет заметку.
 func (ns *noteService) UpdateNote(ctx context.Context, noteID int, note *models.Note) error {
 	return ns.repo.UpdateNote(ctx, noteID, note)
+}
+
+// DeleteNote удаляет заметку.
+func (ns *noteService) DeleteNote(ctx context.Context, noteID int) error {
+	return ns.repo.DeleteNote(ctx, noteID)
 }

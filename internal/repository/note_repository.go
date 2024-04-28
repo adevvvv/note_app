@@ -13,6 +13,7 @@ type NoteRepository interface {
 	AddNote(ctx context.Context, note *models.Note) (int, error)
 	GetNoteByID(ctx context.Context, noteID int) (*models.Note, error)
 	UpdateNote(ctx context.Context, noteID int, note *models.Note) error
+	DeleteNote(ctx context.Context, noteID int) error
 }
 
 // noteRepository реализация интерфейса NoteRepository.
@@ -80,5 +81,23 @@ func (nr *noteRepository) UpdateNote(ctx context.Context, noteID int, note *mode
 	if rowsAffected == 0 {
 		return fmt.Errorf("нет затронутых строк, ID заметки: %d", noteID)
 	}
+	return nil
+}
+
+// DeleteNote удаляет заметку из базы данных.
+func (nr *noteRepository) DeleteNote(ctx context.Context, noteID int) error {
+	const deleteQuery = "DELETE FROM notes WHERE id = $1"
+
+	result, err := nr.db.ExecContext(ctx, deleteQuery, noteID)
+	if err != nil {
+		log.Printf("Ошибка при удалении заметки: %v", err)
+		return fmt.Errorf("не удалось удалить заметку: %v", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("нет затронутых строк, ID заметки: %d", noteID)
+	}
+
 	return nil
 }
