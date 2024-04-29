@@ -19,6 +19,13 @@ func NewSignupHandler(userService *services.UserService) *UserHandler {
 	return &UserHandler{UserService: userService}
 }
 
+// SignUp регистрирует нового пользователя.
+// @Summary Регистрация пользователя
+// @Description Регистрирует нового пользователя с заданными данными
+// @Accept json
+// @Produce json
+// @Param body body models.UserInput true "Данные нового пользователя"
+// @Router /signup [post]
 func (userHandler *UserHandler) SignUp(c *gin.Context) {
 	var user models.User
 	if err := c.BindJSON(&user); err != nil {
@@ -39,7 +46,7 @@ func (userHandler *UserHandler) SignUp(c *gin.Context) {
 	user.Password = hashedPassword
 
 	if err := userHandler.UserService.CreateUser(&user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при создании пользователя"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка, пользователь уже зарегистрирован"})
 		return
 	}
 

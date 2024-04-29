@@ -30,6 +30,12 @@ func NewNoteHandler(noteService services.NoteService, userService *services.User
 }
 
 // AddNote обрабатывает запрос на добавление новой заметки.
+// @Summary Добавление новой заметки
+// @Description Обрабатывает запрос на добавление новой заметки.
+// @Accept json
+// @Produce json
+// @Param body body models.NoteInput true "Данные новой заметки"
+// @Router /notes [post]
 func (noteHandler *NoteHandler) AddNote(c *gin.Context) {
 	var note models.Note
 	if err := c.BindJSON(&note); err != nil {
@@ -88,6 +94,13 @@ func (noteHandler *NoteHandler) AddNote(c *gin.Context) {
 }
 
 // EditNoteHandler обрабатывает запрос на редактирование заметки.
+// @Summary Редактирование заметки
+// @Description Обрабатывает запрос на редактирование заметки.
+// @Accept json
+// @Produce json
+// @Param id path int true "Идентификатор заметки"
+// @Param body body models.NoteInput true "Новые данные заметки"
+// @Router /notes/{id} [put]
 func EditNoteHandler(ns services.NoteService, us *services.UserService, jwtKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Извлечение токена из куки запроса
@@ -174,6 +187,11 @@ func EditNoteHandler(ns services.NoteService, us *services.UserService, jwtKey s
 }
 
 // DeleteNoteHandler обрабатывает запрос на удаление заметки.
+// @Summary Удаление заметки
+// @Description Обрабатывает запрос на удаление заметки.
+// @Produce json
+// @Param id path int true "Идентификатор заметки"
+// @Router /notes/{id} [delete]
 func DeleteNoteHandler(ns services.NoteService, jwtKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Извлечение токена из куки запроса
@@ -231,6 +249,17 @@ func DeleteNoteHandler(ns services.NoteService, jwtKey string) gin.HandlerFunc {
 }
 
 // GetNotesHandler обрабатывает запрос на получение заметок с возможностью фильтрации.
+// @Summary Получение заметок
+// @Description Обрабатывает запрос на получение заметок с возможностью фильтрации.
+// @Accept json
+// @Produce json
+// @Param start_date query string false "Дата начала в формате 'ГГГГ-ММ-ДД'"
+// @Param end_date query string false "Дата окончания в формате 'ГГГГ-ММ-ДД'"
+// @Param username query string false "Имя пользователя"
+// @Param date query string false "Дата в формате 'ГГГГ-ММ-ДД'"
+// @Param page query int false "Номер страницы"
+// @Param limit query int false "Количество записей на странице"
+// @Router /notes [get]
 func GetNotesHandler(ns services.NoteService, us services.UserService, jwtKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Извлечение токена из куки запроса

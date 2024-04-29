@@ -6,6 +6,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	_ "github.com/swaggo/http-swagger"
 	"gopkg.in/yaml.v3"
+	_ "note_app/docs"
 	"note_app/internal/config"
 	"note_app/internal/handlers"
 	"note_app/internal/repository"
@@ -70,9 +71,9 @@ func (a *App) initHandlers(userService *services.UserService, noteService *servi
 
 	a.Router.POST("/signup", signUpHandler)
 	a.Router.POST("/signin", signInHandler)
-	a.Router.POST("/note", noteHandler)
-	a.Router.PUT("/note/:id", editNoteHandler)
-	a.Router.DELETE("/note/:id", deleteNoteHandler)
+	a.Router.POST("/notes", noteHandler)
+	a.Router.PUT("/notes/:id", editNoteHandler)
+	a.Router.DELETE("/notes/:id", deleteNoteHandler)
 	a.Router.GET("/notes", getNotesHandler)
 
 }

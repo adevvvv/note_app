@@ -1,0 +1,133 @@
+definitions:
+  models.NoteInput:
+    properties:
+      text:
+        type: string
+      title:
+        type: string
+    type: object
+  models.UserInput:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /notes:
+    get:
+      consumes:
+      - application/json
+      description: Обрабатывает запрос на получение заметок с возможностью фильтрации.
+      parameters:
+      - description: Дата начала в формате 'ГГГГ-ММ-ДД'
+        in: query
+        name: start_date
+        type: string
+      - description: Дата окончания в формате 'ГГГГ-ММ-ДД'
+        in: query
+        name: end_date
+        type: string
+      - description: Имя пользователя
+        in: query
+        name: username
+        type: string
+      - description: Дата в формате 'ГГГГ-ММ-ДД'
+        in: query
+        name: date
+        type: string
+      - description: Номер страницы
+        in: query
+        name: page
+        type: integer
+      - description: Количество записей на странице
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      summary: Получение заметок
+    post:
+      consumes:
+      - application/json
+      description: Обрабатывает запрос на добавление новой заметки.
+      parameters:
+      - description: Данные новой заметки
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.NoteInput'
+      produces:
+      - application/json
+      responses: {}
+      summary: Добавление новой заметки
+  /notes/{id}:
+    delete:
+      description: Обрабатывает запрос на удаление заметки.
+      parameters:
+      - description: Идентификатор заметки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      summary: Удаление заметки
+    put:
+      consumes:
+      - application/json
+      description: Обрабатывает запрос на редактирование заметки.
+      parameters:
+      - description: Идентификатор заметки
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Новые данные заметки
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.NoteInput'
+      produces:
+      - application/json
+      responses: {}
+      summary: Редактирование заметки
+  /signin:
+    post:
+      consumes:
+      - application/json
+      description: Аутентифицирует пользователя и генерирует токен доступа
+      parameters:
+      - description: Данные пользователя для входа
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserInput'
+      produces:
+      - application/json
+      responses: {}
+      summary: Вход пользователя
+  /signup:
+    post:
+      consumes:
+      - application/json
+      description: Регистрирует нового пользователя с заданными данными
+      parameters:
+      - description: Данные нового пользователя
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserInput'
+      produces:
+      - application/json
+      responses: {}
+      summary: Регистрация пользователя
+swagger: "2.0"

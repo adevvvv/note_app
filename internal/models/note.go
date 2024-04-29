@@ -11,3 +11,7 @@ type Note struct {
 	Author               string    `json:"author"`
 	BelongsToCurrentUser bool      `json:"belongs_to_current_user,omitempty"`
 }
+type NoteInput struct {
+	Title string `json:"title"`
+	Text  string `json:"text"`
+}

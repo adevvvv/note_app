@@ -23,6 +23,13 @@ func NewSignInHandler(userService *services.UserService, jwtKey string) *LoginHa
 	}
 }
 
+// SignIn выполняет вход пользователя.
+// @Summary Вход пользователя
+// @Description Аутентифицирует пользователя и генерирует токен доступа
+// @Accept json
+// @Produce json
+// @Param body body models.UserInput true "Данные пользователя для входа"
+// @Router /signin [post]
 func (loginHandler *LoginHandler) SignIn(c *gin.Context) {
 	var user models.User
 	if err := c.BindJSON(&user); err != nil {
